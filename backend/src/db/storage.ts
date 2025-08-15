@@ -1,3 +1,4 @@
+// Database dual storage engine
 import path from 'node:path';
 import type {
   User,
@@ -282,6 +283,262 @@ class Storage {
     return true;
   }
 
+  // --- Tasks ---
+  public getTasks(projectId: string): (Task & { assignee?: User; reporter?: User })[] {
+    return this.data.tasks
+      .filter((t) => t.projectId === projectId)
+      .map((t) => ({
+        ...t,
+        assignee: t.assigneeId ? this.getUserById(t.assigneeId) : undefined,
+        reporter: this.getUserById(t.reporterId),
+      }))
+      .sort((a, b) => a.position - b.position);
+  }
+
+  public getAllOrgTasks(organizationId: string): Task[] {
+    return this.data.tasks.filter((t) => t.organizationId === organizationId);
+  }
+
+  public getTaskById(taskId: string): (Task & { assignee?: User; reporter?: User }) | undefined {
+    const t = this.data.tasks.find((task) => task.id === taskId);
+    if (!t) return undefined;
+    return {
+      ...t,
+      assignee: t.assigneeId ? this.getUserById(t.assigneeId) : undefined,
+      reporter: this.getUserById(t.reporterId),
+    };
+  }
+
+  public createTask(task: Omit<Task, 'id' | 'key' | 'position' | 'version' | 'createdAt' | 'updatedAt'>): Task {
+    const project = this.data.projects.find((p) => p.id === task.projectId);
+    if (!project) throw new Error('Project not found');
+
+    project.taskSequence = (project.taskSequence || 0) + 1;
+    const taskKey = `${project.key}-${project.taskSequence}`;
+
+    const existingInStatus = this.data.tasks.filter(
+      (t) => t.projectId === task.projectId && t.status === task.status
+    );
+
+    const newTask: Task = {
+      ...task,
+      id: `task_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      key: taskKey,
+      position: existingInStatus.length,
+      version: 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.data.tasks.push(newTask);
+    this.saveSync();
+    return newTask;
+  }
+
+  public updateTask(
+    taskId: string,
+    updates: Partial<Task>,
+    clientVersion?: number
+  ): { task?: Task; conflict?: boolean; currentVersion?: number } {
+    const task = this.data.tasks.find((t) => t.id === taskId);
+    if (!task) return {};
+
+    // Optimistic Concurrency Control check:
+    if (clientVersion !== undefined && clientVersion !== task.version) {
+      return {
+        conflict: true,
+        currentVersion: task.version,
+        task,
+      };
+    }
+
+    Object.assign(task, updates, {
+      version: task.version + 1,
+      updatedAt: new Date().toISOString(),
+    });
+
+    this.saveSync();
+    return { task };
+  }
+
+  public deleteTask(taskId: string): boolean {
+    const idx = this.data.tasks.findIndex((t) => t.id === taskId);
+    if (idx === -1) return false;
+    this.data.tasks.splice(idx, 1);
+    this.data.comments = this.data.comments.filter((c) => c.taskId !== taskId);
+    this.saveSync();
+    return true;
+  }
+
+  // --- Comments ---
+  public getComments(taskId: string): (Comment & { author?: User })[] {
+    return this.data.comments
+      .filter((c) => c.taskId === taskId)
+      .map((c) => ({
+        ...c,
+        author: this.getUserById(c.authorId),
+      }))
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  }
+
+  public createComment(comment: Omit<Comment, 'id' | 'createdAt' | 'updatedAt'>): Comment {
+    const newComment: Comment = {
+      ...comment,
+      id: `comm_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    this.data.comments.push(newComment);
+    this.saveSync();
+    return newComment;
+  }
+
+  public getCommentById(commentId: string): Comment | undefined {
+    return this.data.comments.find((c) => c.id === commentId);
+  }
+
+  public getReleaseById(releaseId: string): Release | undefined {
+    return this.data.releases.find((r) => r.id === releaseId);
+  }
+
+  public deleteComment(commentId: string): boolean {
+    const idx = this.data.comments.findIndex((c) => c.id === commentId);
+    if (idx === -1) return false;
+    this.data.comments.splice(idx, 1);
+    this.saveSync();
+    return true;
+  }
+
+  // --- Releases ---
+  public getReleases(organizationId: string, projectId?: string): Release[] {
+    let list = this.data.releases.filter((r) => r.organizationId === organizationId);
+    if (projectId) {
+      list = list.filter((r) => r.projectId === projectId);
+    }
+    return list.sort((a, b) => new Date(b.targetDate).getTime() - new Date(a.targetDate).getTime());
+  }
+
+  public createRelease(release: Omit<Release, 'id' | 'createdAt' | 'updatedAt'>): Release {
+    const newRelease: Release = {
+      ...release,
+      id: `rel_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    this.data.releases.push(newRelease);
+    this.saveSync();
+    return newRelease;
+  }
+
+  public updateRelease(releaseId: string, updates: Partial<Release>): Release | undefined {
+    const rel = this.data.releases.find((r) => r.id === releaseId);
+    if (!rel) return undefined;
+    Object.assign(rel, updates, { updatedAt: new Date().toISOString() });
+    this.saveSync();
+    return rel;
+  }
+
+  // --- Notifications ---
+  public getNotifications(userId: string): Notification[] {
+    return this.data.notifications
+      .filter((n) => n.userId === userId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  public createNotification(notif: Omit<Notification, 'id' | 'createdAt' | 'read'>): Notification {
+    const newNotif: Notification = {
+      ...notif,
+      id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      read: false,
+      createdAt: new Date().toISOString(),
+    };
+    this.data.notifications.push(newNotif);
+    this.saveSync();
+    return newNotif;
+  }
+
+  public markNotificationAsRead(id: string): boolean {
+    const notif = this.data.notifications.find((n) => n.id === id);
+    if (!notif) return false;
+    notif.read = true;
+    this.saveSync();
+    return true;
+  }
+
+  public markAllNotificationsAsRead(userId: string): void {
+    for (const notif of this.data.notifications) {
+      if (notif.userId === userId) {
+        notif.read = true;
+      }
+    }
+    this.saveSync();
+  }
+
+  // --- Activity Logs ---
+  public getActivityLogs(organizationId: string, projectId?: string, taskId?: string): ActivityLog[] {
+    return this.data.activityLogs
+      .filter((a) => {
+        if (a.organizationId !== organizationId) return false;
+        if (projectId && a.projectId !== projectId) return false;
+        if (taskId && a.taskId !== taskId) return false;
+        return true;
+      })
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 50);
+  }
+
+  public logActivity(log: Omit<ActivityLog, 'id' | 'createdAt'>): ActivityLog {
+    const newLog: ActivityLog = {
+      ...log,
+      id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      createdAt: new Date().toISOString(),
+    };
+    this.data.activityLogs.unshift(newLog);
+    if (this.data.activityLogs.length > 300) {
+      this.data.activityLogs.pop();
+    }
+    this.saveSync();
+    return newLog;
+  }
+
+  // --- Invitations ---
+  public getInvitations(organizationId: string): Invitation[] {
+    return this.data.invitations.filter((i) => i.organizationId === organizationId);
+  }
+
+  public createInvitation(inv: Omit<Invitation, 'id' | 'createdAt' | 'status'>): Invitation {
+    const newInv: Invitation = {
+      ...inv,
+      id: `inv_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+    this.data.invitations.push(newInv);
+    this.saveSync();
+    return newInv;
+  }
+
+  public revokeInvitation(invitationId: string): boolean {
+    const inv = this.data.invitations.find((i) => i.id === invitationId);
+    if (!inv) return false;
+    inv.status = 'revoked';
+    this.saveSync();
+    return true;
+  }
+
+  public acceptInvitation(token: string, userId: string): boolean {
+    const inv = this.data.invitations.find((i) => i.token === token && i.status === 'pending');
+    if (!inv) return false;
+    inv.status = 'accepted';
+    this.createMembership({
+      organizationId: inv.organizationId,
+      userId,
+      role: inv.role,
+      joinedAt: new Date().toISOString(),
+    });
+    this.saveSync();
+    return true;
+  }
 }
 
 export const db = new Storage();
