@@ -1,3 +1,4 @@
+// Express routing engine
 import { Router, Request, Response, NextFunction } from 'express';
 import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
@@ -554,4 +555,487 @@ apiRouter.delete('/projects/:projectId', requireAuth, requireRolePermission('pro
   res.json({ success: true });
 });
 
-export default router;
+// --- TASKS ---
+
+apiRouter.get('/projects/:projectId/tasks', requireAuth, (req: Request, res: Response) => {
+  const tasks = db.getTasks(req.params.projectId);
+  res.json(tasks);
+});
+
+apiRouter.post('/projects/:projectId/tasks', requireAuth, requireRolePermission('tasks:create'), async (req: Request, res: Response) => {
+  const authReq = req as any as AuthenticatedRequest;
+  const parsed = createTaskSchema.safeParse({ ...req.body, projectId: req.params.projectId });
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.issues[0].message });
+  }
+
+  if (parsed.data.assigneeId && !db.getMembership(authReq.organization.id, parsed.data.assigneeId)) {
+    return res.status(400).json({ error: 'Assignee must be a member of this workspace' });
+  }
+
+  // Check dependencies for cycles
+  const projectTasks = db.getTasks(req.params.projectId);
+  for (const depId of parsed.data.dependencies) {
+    if (wouldCreateDependencyCycle(projectTasks, 'new_task', depId)) {
+      return res.status(400).json({ error: 'Invalid dependency: would create a circular dependency cycle' });
+    }
+  }
+
+  const task = db.createTask({
+    organizationId: authReq.organization.id,
+    projectId: req.params.projectId,
+    title: parsed.data.title,
+    description: parsed.data.description,
+    status: parsed.data.status,
+    priority: parsed.data.priority,
+    assigneeId: parsed.data.assigneeId,
+    reporterId: authReq.user.id,
+    labels: parsed.data.labels,
+    dueDate: parsed.data.dueDate,
+    estimatedEffort: parsed.data.estimatedEffort,
+    dependencies: parsed.data.dependencies,
+    releaseId: parsed.data.releaseId,
+  });
+
+  // Notify assignee if assigned to someone else
+  if (task.assigneeId && task.assigneeId !== authReq.user.id) {
+    const notif = db.createNotification({
+      organizationId: authReq.organization.id,
+      userId: task.assigneeId,
+      type: 'task_assigned',
+      title: 'Task Assigned',
+      message: `${authReq.user.name} assigned you to ${task.key}: ${task.title}`,
+      linkUrl: `/projects/${task.projectId}?task=${task.id}`,
+    });
+    broadcastNotification(task.assigneeId, notif);
+  }
+
+  logAndBroadcastActivity({
+    organizationId: authReq.organization.id,
+    projectId: task.projectId,
+    taskId: task.id,
+    actorId: authReq.user.id,
+    actorName: authReq.user.name,
+    action: 'task:created',
+    details: `Created task ${task.key}: ${task.title}`,
+  });
+
+  // Real-time broadcast
+  broadcastTaskEvent(authReq.organization.id, task.projectId, 'task:created', task);
+
+  res.status(201).json(task);
+});
+
+apiRouter.get('/tasks/:taskId', requireAuth, (req: Request, res: Response) => {
+  const task = db.getTaskById(req.params.taskId);
+  if (!task) return res.status(404).json({ error: 'Task not found' });
+  res.json(task);
+});
+
+apiRouter.patch('/tasks/:taskId', requireAuth, requireRolePermission('tasks:update'), (req: Request, res: Response) => {
+  const authReq = req as any as AuthenticatedRequest;
+  const parsed = updateTaskSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.issues[0].message });
+  }
+
+  const existingTask = db.getTaskById(req.params.taskId);
+  if (!existingTask) return res.status(404).json({ error: 'Task not found' });
+
+  // Validate dependencies if updating
+  if (parsed.data.dependencies) {
+    const projectTasks = db.getTasks(existingTask.projectId);
+    for (const depId of parsed.data.dependencies) {
+      if (wouldCreateDependencyCycle(projectTasks, existingTask.id, depId)) {
+        return res.status(400).json({
+          error: `Circular dependency detected: adding task ${depId} creates a directed cycle!`,
+        });
+      }
+    }
+  }
+
+  const authOrgId = (req as any).organization.id as string;
+  if (parsed.data.assigneeId && !db.getMembership(authOrgId, parsed.data.assigneeId)) {
+    return res.status(400).json({ error: 'Assignee must be a member of this workspace' });
+  }
+
+  // Optimistic Concurrency Control
+  const result = db.updateTask(req.params.taskId, parsed.data, parsed.data.version);
+  if (result.conflict) {
+    return res.status(409).json({
+      error: 'Conflict: Task was modified by another team member. Reloading authoritative version.',
+      serverTask: result.task,
+      serverVersion: result.currentVersion,
+    });
+  }
+
+  const updatedTask = result.task!;
+
+  // Activity audit log
+  let changeDesc = `Updated task ${updatedTask.key}`;
+  if (parsed.data.status && parsed.data.status !== existingTask.status) {
+    changeDesc = `Changed status of ${updatedTask.key} from ${existingTask.status} to ${parsed.data.status}`;
+  } else if (parsed.data.assigneeId !== undefined && parsed.data.assigneeId !== existingTask.assigneeId) {
+    changeDesc = `Reassigned ${updatedTask.key}`;
+  }
+
+  logAndBroadcastActivity({
+    organizationId: authReq.organization.id,
+    projectId: updatedTask.projectId,
+    taskId: updatedTask.id,
+    actorId: authReq.user.id,
+    actorName: authReq.user.name,
+    action: 'task:updated',
+    details: changeDesc,
+  });
+
+  // Real-time broadcast
+  broadcastTaskEvent(authReq.organization.id, updatedTask.projectId, 'task:updated', updatedTask);
+
+  res.json(updatedTask);
+});
+
+apiRouter.delete('/tasks/:taskId', requireAuth, requireRolePermission('tasks:delete'), (req: Request, res: Response) => {
+  const authReq = req as any as AuthenticatedRequest;
+  const task = db.getTaskById(req.params.taskId);
+  if (!task) return res.status(404).json({ error: 'Task not found' });
+
+  db.deleteTask(task.id);
+  logAndBroadcastActivity({
+    organizationId: authReq.organization.id,
+    projectId: task.projectId,
+    actorId: authReq.user.id,
+    actorName: authReq.user.name,
+    action: 'task:deleted',
+    details: `Deleted task ${task.key}`,
+  });
+
+  broadcastTaskEvent(authReq.organization.id, task.projectId, 'task:deleted', { taskId: task.id });
+
+  res.json({ success: true });
+});
+
+// --- COMMENTS ---
+
+apiRouter.get('/tasks/:taskId/comments', requireAuth, (req: Request, res: Response) => {
+  const comments = db.getComments(req.params.taskId);
+  res.json(comments);
+});
+
+apiRouter.post('/tasks/:taskId/comments', requireAuth, requireRolePermission('comments:create'), (req: Request, res: Response) => {
+  const authReq = req as any as AuthenticatedRequest;
+  const parsed = createCommentSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.issues[0].message });
+  }
+
+  const task = db.getTaskById(req.params.taskId);
+  if (!task) return res.status(404).json({ error: 'Task not found' });
+
+  const comment = db.createComment({
+    organizationId: authReq.organization.id,
+    projectId: task.projectId,
+    taskId: task.id,
+    authorId: authReq.user.id,
+    content: parsed.data.content,
+  });
+
+  // Notify task assignee if someone else commented
+  if (task.assigneeId && task.assigneeId !== authReq.user.id) {
+    const notif = db.createNotification({
+      organizationId: authReq.organization.id,
+      userId: task.assigneeId,
+      type: 'comment_added',
+      title: 'New Comment',
+      message: `${authReq.user.name} commented on ${task.key}: "${parsed.data.content.slice(0, 60)}..."`,
+      linkUrl: `/projects/${task.projectId}?task=${task.id}`,
+    });
+    broadcastNotification(task.assigneeId, notif);
+  }
+
+  logAndBroadcastActivity({
+    organizationId: authReq.organization.id,
+    projectId: task.projectId,
+    taskId: task.id,
+    actorId: authReq.user.id,
+    actorName: authReq.user.name,
+    action: 'comment:created',
+    details: `Commented on ${task.key}: "${parsed.data.content.slice(0, 50)}..."`,
+  });
+
+  broadcastCommentEvent(task.projectId, 'comment:created', comment);
+
+  res.status(201).json(comment);
+});
+
+apiRouter.delete('/comments/:commentId', requireAuth, requireRolePermission('comments:delete'), (req: Request, res: Response) => {
+  const success = db.deleteComment(req.params.commentId);
+  if (!success) return res.status(404).json({ error: 'Comment not found' });
+  res.json({ success: true });
+});
+
+// --- RELEASES ---
+
+apiRouter.get('/organizations/:orgId/releases', requireAuth, (req: Request, res: Response) => {
+  const projectId = req.query.projectId as string | undefined;
+  const releases = db.getReleases(req.params.orgId, projectId);
+  res.json(releases);
+});
+
+apiRouter.post('/organizations/:orgId/releases', requireAuth, requireRolePermission('releases:create'), (req: Request, res: Response) => {
+  const authReq = req as any as AuthenticatedRequest;
+  const parsed = createReleaseSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.issues[0].message });
+  }
+
+  const projectId = req.body.projectId;
+  if (!projectId) return res.status(400).json({ error: 'Project ID is required' });
+
+  const release = db.createRelease({
+    organizationId: req.params.orgId,
+    projectId,
+    version: parsed.data.version,
+    title: parsed.data.title,
+    description: parsed.data.description,
+    status: parsed.data.status,
+    targetDate: parsed.data.targetDate,
+    linkedTaskIds: parsed.data.linkedTaskIds,
+    releaseNotes: parsed.data.releaseNotes || `### Release ${parsed.data.version}\n- Initial release candidate`,
+  });
+
+  logAndBroadcastActivity({
+    organizationId: req.params.orgId,
+    projectId,
+    actorId: authReq.user.id,
+    actorName: authReq.user.name,
+    action: 'release:created',
+    details: `Created release ${release.version}: ${release.title}`,
+  });
+
+  res.status(201).json(release);
+});
+
+apiRouter.patch('/releases/:releaseId', requireAuth, requireRolePermission('releases:update'), (req: Request, res: Response) => {
+  const authReq = req as any as AuthenticatedRequest;
+  const parsed = updateReleaseSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.issues[0].message });
+  }
+
+  const updates: any = { ...parsed.data };
+  if (parsed.data.status === 'released') {
+    updates.releasedAt = new Date().toISOString();
+  }
+
+  const updated = db.updateRelease(req.params.releaseId, updates);
+  if (!updated) return res.status(404).json({ error: 'Release not found' });
+
+  logAndBroadcastActivity({
+    organizationId: updated.organizationId,
+    projectId: updated.projectId,
+    actorId: authReq.user.id,
+    actorName: authReq.user.name,
+    action: 'release:updated',
+    details: `Updated release ${updated.version} (status: ${updated.status})`,
+  });
+
+  res.json(updated);
+});
+
+// --- NOTIFICATIONS ---
+
+apiRouter.get('/notifications', requireAuth, (req: Request, res: Response) => {
+  const authReq = req as any as AuthenticatedRequest;
+  const list = db.getNotifications(authReq.user.id);
+  res.json(list);
+});
+
+apiRouter.patch('/notifications/:id/read', requireAuth, (req: Request, res: Response) => {
+  db.markNotificationAsRead(req.params.id);
+  res.json({ success: true });
+});
+
+apiRouter.post('/notifications/read-all', requireAuth, (req: Request, res: Response) => {
+  const authReq = req as any as AuthenticatedRequest;
+  db.markAllNotificationsAsRead(authReq.user.id);
+  res.json({ success: true });
+});
+
+// --- ACTIVITY LOGS ---
+
+apiRouter.get('/organizations/:orgId/activity', requireAuth, (req: Request, res: Response) => {
+  const projectId = req.query.projectId as string | undefined;
+  const taskId = req.query.taskId as string | undefined;
+  const logs = db.getActivityLogs(req.params.orgId, projectId, taskId);
+  res.json(logs);
+});
+
+// --- ANALYTICS ---
+
+apiRouter.get('/organizations/:orgId/analytics', requireAuth, (req: Request, res: Response) => {
+  const orgId = req.params.orgId;
+  const projects = db.getProjects(orgId);
+  const tasks = db.getAllOrgTasks(orgId);
+  const users = db.getUsers();
+
+  const now = new Date();
+  let overdueTasks = 0;
+  const statusBreakdown: Record<string, number> = {
+    backlog: 0,
+    todo: 0,
+    in_progress: 0,
+    in_review: 0,
+    done: 0,
+    cancelled: 0,
+  };
+
+  const priorityBreakdown: Record<string, number> = {
+    low: 0,
+    medium: 0,
+    high: 0,
+    urgent: 0,
+  };
+
+  const userWorkloadMap = new Map<string, { total: number; done: number }>();
+  for (const u of users) {
+    userWorkloadMap.set(u.id, { total: 0, done: 0 });
+  }
+
+  for (const t of tasks) {
+    statusBreakdown[t.status] = (statusBreakdown[t.status] || 0) + 1;
+    priorityBreakdown[t.priority] = (priorityBreakdown[t.priority] || 0) + 1;
+
+    if (t.dueDate && new Date(t.dueDate) < now && t.status !== 'done' && t.status !== 'cancelled') {
+      overdueTasks++;
+    }
+
+    if (t.assigneeId && userWorkloadMap.has(t.assigneeId)) {
+      const w = userWorkloadMap.get(t.assigneeId)!;
+      w.total++;
+      if (t.status === 'done') w.done++;
+    }
+  }
+
+  const assigneeWorkload = users
+    .map((u) => {
+      const stats = userWorkloadMap.get(u.id) || { total: 0, done: 0 };
+      return {
+        userId: u.id,
+        userName: u.name,
+        userAvatar: u.avatarUrl,
+        taskCount: stats.total,
+        completedCount: stats.done,
+      };
+    })
+    .filter((w) => w.taskCount > 0);
+
+  const completedTasks = statusBreakdown.done || 0;
+  const openTasks = tasks.length - completedTasks - (statusBreakdown.cancelled || 0);
+
+  res.json({
+    totalProjects: projects.length,
+    openTasks,
+    completedTasks,
+    overdueTasks,
+    statusBreakdown,
+    priorityBreakdown,
+    assigneeWorkload,
+    velocityTrend: [
+      { week: 'W-3', completedPoints: 18, createdCount: 12 },
+      { week: 'W-2', completedPoints: 24, createdCount: 15 },
+      { week: 'W-1', completedPoints: 31, createdCount: 14 },
+      { week: 'Current', completedPoints: 14, createdCount: 6 },
+    ],
+  });
+});
+
+// --- GITHUB INTEGRATION & WEBHOOKS ---
+
+apiRouter.post('/integrations/github/webhook', async (req: Request, res: Response) => {
+  const signature = req.headers['x-hub-signature-256'] as string;
+  const secret = process.env.GITHUB_WEBHOOK_SECRET || 'forgeflow_default_github_secret';
+
+  // HMAC SHA-256 verification
+  if (signature) {
+    const rawBody = JSON.stringify(req.body);
+    const expectedSignature = `sha256=${crypto.createHmac('sha256', secret).update(rawBody).digest('hex')}`;
+    if (signature !== expectedSignature) {
+      return res.status(401).json({ error: 'GitHub Webhook signature verification failed' });
+    }
+  }
+
+  await processGitHubEvent(req.body);
+  res.json({ received: true });
+});
+
+apiRouter.post('/integrations/github/simulate', requireAuth, async (req: Request, res: Response) => {
+  const authReq = req as any as AuthenticatedRequest;
+  const { eventType, taskKey, prNumber, title } = req.body;
+  const result = await simulateGitHubActivity(authReq.organization.id, authReq.user, eventType, taskKey, prNumber, title);
+  res.json(result);
+});
+
+async function simulateGitHubActivity(
+  orgId: string,
+  actor: User,
+  eventType: 'pr_opened' | 'pr_merged' | 'commit',
+  taskKey?: string,
+  prNumber = 204,
+  prTitle = 'feat(core): update Kafka stream consumers'
+) {
+  const tasks = db.getAllOrgTasks(orgId);
+  const targetTask = taskKey ? tasks.find((t) => t.key === taskKey) : tasks[0];
+
+  if (!targetTask) {
+    return { success: false, message: 'No target task found to link' };
+  }
+
+  if (eventType === 'pr_opened') {
+    db.updateTask(targetTask.id, {
+      status: 'in_review',
+      githubPrNumber: prNumber,
+      githubPrUrl: `https://github.com/acme/forgeflow/pull/${prNumber}`,
+      githubPrState: 'open',
+    });
+
+    logAndBroadcastActivity({
+      organizationId: targetTask.organizationId,
+      projectId: targetTask.projectId,
+      taskId: targetTask.id,
+      actorId: actor.id,
+      actorName: 'GitHub Bot',
+      action: 'github:pr_opened',
+      details: `Opened PR #${prNumber} "${prTitle}" referencing ${targetTask.key}`,
+    });
+
+    broadcastTaskEvent(targetTask.organizationId, targetTask.projectId, 'task:updated', db.getTaskById(targetTask.id));
+    return { success: true, message: `Linked PR #${prNumber} to ${targetTask.key} and transitioned to In Review` };
+  }
+
+  if (eventType === 'pr_merged') {
+    db.updateTask(targetTask.id, {
+      status: 'done',
+      githubPrState: 'merged',
+    });
+
+    logAndBroadcastActivity({
+      organizationId: targetTask.organizationId,
+      projectId: targetTask.projectId,
+      taskId: targetTask.id,
+      actorId: actor.id,
+      actorName: 'GitHub Bot',
+      action: 'github:pr_merged',
+      details: `Merged PR #${prNumber} into main, marked ${targetTask.key} as Done`,
+    });
+
+    broadcastTaskEvent(targetTask.organizationId, targetTask.projectId, 'task:updated', db.getTaskById(targetTask.id));
+    return { success: true, message: `Merged PR #${prNumber} and marked ${targetTask.key} as Done` };
+  }
+
+  return { success: true, message: 'Event simulated' };
+}
+
+async function processGitHubEvent(payload: any) {
+  console.log('[GitHub Webhook] Received payload action:', payload?.action);
+}
