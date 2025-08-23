@@ -1,0 +1,17 @@
+# Workbench container services definition
+# Optional: a local MongoDB for development.
+#   docker compose up -d
+# then set in backend/.env:
+#   MONGODB_URI=mongodb://127.0.0.1:27017/workbench
+services:
+  mongo:
+    image: mongo:7
+    container_name: workbench-mongo
+    ports:
+      - '127.0.0.1:27017:27017'
+    volumes:
+      - workbench_mongo:/data/db
+    restart: unless-stopped
+
+volumes:
+  workbench_mongo:
