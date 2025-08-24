@@ -59,5 +59,69 @@ check('duplicate key rejected', r.status === 400);
 r = await A.call('PATCH', `/projects/${pid}`, { description: 'Updated' });
 check('update project', r.status === 200, r.data);
 
+console.log('Tasks');
+const tasks = [];
+for (const [title, status] of [['First task', 'todo'], ['Second task', 'in_progress'], ['Third task', 'backlog']]) {
+  r = await A.call('POST', `/projects/${pid}/tasks`, { projectId: pid, title, status, priority: 'high', assigneeId: uid });
+  check('create ' + title, r.status === 201, r.data);
+  tasks.push(r.data);
+}
+r = await A.call('PATCH', `/tasks/${tasks[0].id}`, { status: 'in_review', version: tasks[0].version });
+check('move task to In Review', r.status === 200, r.data);
+r = await A.call('PATCH', `/tasks/${tasks[1].id}`, { dependencies: [tasks[0].id] });
+check('add dependency', r.status === 200, r.data);
+r = await A.call('PATCH', `/tasks/${tasks[0].id}`, { dependencies: [tasks[1].id] });
+check('circular dependency blocked', r.status >= 400);
+r = await A.call('POST', `/projects/${pid}/tasks`, { projectId: pid, title: 'Bad assignee', assigneeId: buid });
+check('cannot assign to non-member', r.status === 400);
+
+console.log('Comments');
+r = await A.call('POST', `/tasks/${tasks[0].id}/comments`, { content: 'Looks good' });
+check('add comment', r.status === 201, r.data);
+const cid = r.data?.id;
+r = await A.call('DELETE', `/comments/${cid}`);
+check('delete comment', r.status === 200);
+
+console.log('Releases');
+r = await A.call('POST', `/organizations/${org}/releases`, { version: 'v1.0.0', title: 'First release', targetDate: '2026-12-31', linkedTaskIds: [tasks[0].id], projectId: pid });
+check('create release', r.status === 201, r.data);
+r = await A.call('PATCH', `/releases/${r.data.id}`, { status: 'in_progress' });
+check('update release', r.status === 200, r.data);
+
+console.log('Team');
+r = await A.call('POST', `/organizations/${org}/invitations`, { email: `smoke-b-${stamp}@example.com`, role: 'member' });
+check('invite member', r.status === 201, r.data);
+r = await B.call('POST', `/invitations/${r.data.token}/accept`);
+check('accept invitation', r.status === 200, r.data);
+r = await A.call('PATCH', `/organizations/${org}/members/${buid}`, { role: 'admin' });
+check('change role', r.status === 200, r.data);
+r = await B.call('POST', '/auth/switch-organization', { organizationId: org });
+check('B switches to joined workspace', r.status === 200);
+r = await A.call('DELETE', `/organizations/${org}/members/${buid}`);
+check('remove member', r.status === 200, r.data);
+
+console.log('Other');
+for (const [name, path] of [['notifications', '/notifications'], ['activity', `/organizations/${org}/activity`], ['analytics', `/organizations/${org}/analytics`], ['search', `/organizations/${org}/search?q=First`]]) {
+  r = await A.call('GET', path);
+  check(name, r.status === 200, r.data);
+}
+
+console.log('Workspace isolation (B was removed, must see nothing of A)');
+for (const [name, call] of [
+  ['list projects', () => B.call('GET', `/organizations/${org}/projects`)],
+  ['read project', () => B.call('GET', `/projects/${pid}`)],
+  ['list tasks', () => B.call('GET', `/projects/${pid}/tasks`)],
+  ['read task', () => B.call('GET', `/tasks/${tasks[0].id}`)],
+  ['create project', () => B.call('POST', `/organizations/${org}/projects`, { name: 'Hack', key: 'HACK', leadId: buid })],
+  ['create task', () => B.call('POST', `/projects/${pid}/tasks`, { projectId: pid, title: 'Hack task' })],
+  ['delete task', () => B.call('DELETE', `/tasks/${tasks[0].id}`)],
+  ['analytics', () => B.call('GET', `/organizations/${org}/analytics`)],
+  ['members', () => B.call('GET', `/organizations/${org}/members`)],
+  ['activity', () => B.call('GET', `/organizations/${org}/activity`)],
+]) {
+  const res = await call();
+  check(`B blocked: ${name}`, res.status === 403 || res.status === 404, `got ${res.status}`);
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
