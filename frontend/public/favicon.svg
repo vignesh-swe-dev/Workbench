@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Workbench Favicon (32x32) -->
+  <rect width="32" height="32" rx="6" fill="#1E293B"/>
+  <g transform="translate(1, 1)">
+    <!-- Top Horizontal Slab (Vibrant Accent Blue #3B82F6) -->
+    <rect x="2" y="3" width="26" height="4.5" rx="1.2" fill="#3B82F6"/>
+    <!-- Left Sturdy Pier Leg (Crisp White #FFFFFF) -->
+    <rect x="5" y="9.5" width="4" height="15" rx="1.2" fill="#FFFFFF"/>
+    <!-- Right Sturdy Pier Leg (Crisp White #FFFFFF) -->
+    <rect x="21" y="9.5" width="4" height="15" rx="1.2" fill="#FFFFFF"/>
+    <!-- Lower Structural Stretcher / Shelf (Crisp White #FFFFFF) -->
+    <rect x="7" y="16.5" width="16" height="3" rx="1" fill="#FFFFFF"/>
+  </g>
+</svg>
