@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" width="320" height="80" fill="none">
+  <!-- Workbench Horizontal Brandmark (Single-Color Black) -->
+  <!-- Plain White Background with Generous Padding -->
+  <rect width="320" height="80" fill="#FFFFFF"/>
+
+  <g transform="translate(26, 22)">
+    <!-- Top Horizontal Slab (Single-Color Black #111827) -->
+    <rect x="2" y="3" width="32" height="5.5" rx="1.5" fill="#111827"/>
+    <!-- Left Sturdy Pier Leg -->
+    <rect x="5.5" y="11.5" width="5" height="19.5" rx="1.5" fill="#111827"/>
+    <!-- Right Sturdy Pier Leg -->
+    <rect x="25.5" y="11.5" width="5" height="19.5" rx="1.5" fill="#111827"/>
+    <!-- Lower Structural Stretcher / Shelf -->
+    <rect x="7.5" y="20.5" width="21" height="4" rx="1.2" fill="#111827"/>
+  </g>
+
+  <!-- Wordmark: "Workbench" in Inter SemiBold (600), -0.02em letter spacing -->
+  <text x="78" y="47" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="24" font-weight="600" letter-spacing="-0.02em" fill="#111827">Workbench</text>
+</svg>

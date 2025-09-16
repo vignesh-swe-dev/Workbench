@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" width="320" height="80" fill="none">
+  <!-- Workbench Horizontal Brandmark (White-on-Dark #0F172A) -->
+  <rect width="320" height="80" fill="#0F172A"/>
+
+  <g transform="translate(26, 22)">
+    <!-- Top Horizontal Slab (Vibrant Accent Blue #3B82F6) -->
+    <rect x="2" y="3" width="32" height="5.5" rx="1.5" fill="#3B82F6"/>
+    <!-- Left Sturdy Pier Leg (Crisp White #FFFFFF) -->
+    <rect x="5.5" y="11.5" width="5" height="19.5" rx="1.5" fill="#FFFFFF"/>
+    <!-- Right Sturdy Pier Leg (Crisp White #FFFFFF) -->
+    <rect x="25.5" y="11.5" width="5" height="19.5" rx="1.5" fill="#FFFFFF"/>
+    <!-- Lower Structural Stretcher / Shelf (Crisp White #FFFFFF) -->
+    <rect x="7.5" y="20.5" width="21" height="4" rx="1.2" fill="#FFFFFF"/>
+  </g>
+
+  <!-- Wordmark: "Workbench" in Inter SemiBold (600), -0.02em letter spacing -->
+  <text x="78" y="47" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="24" font-weight="600" letter-spacing="-0.02em" fill="#FFFFFF">Workbench</text>
+</svg>
