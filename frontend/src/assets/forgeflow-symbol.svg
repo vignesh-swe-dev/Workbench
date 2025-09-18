@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+  <!-- ForgeFlow Standalone Symbol (Square Canvas with Generous Padding) -->
+  <rect width="64" height="64" fill="#FFFFFF"/>
+
+  <g transform="translate(16, 14)">
+    <!-- Symbol: Dual-Stroke Flowing Geometric Monogram F -->
+    <!-- Solid Forge vertical backbone curving into top Flow arm -->
+    <path d="M4 36V7C4 5.34315 5.34315 4 7 4H27C27.5523 4 28 4.44772 28 5V10C28 10.5523 27.5523 11 27 11H12C11.4477 11 11 11.4477 11 12V36C11 36.5523 10.5523 37 10 37H5C4.44772 37 4 36.5523 4 36Z" fill="#2563EB"/>
+    <!-- Flow crossbeam with clean corners -->
+    <path d="M11 20C11 19.4477 11.4477 19 12 19H22C22.5523 19 23 19.4477 23 20V25C23 25.5523 22.5523 26 22 26H12C11.4477 26 11 25.5523 11 25V20Z" fill="#2563EB"/>
+  </g>
+</svg>
