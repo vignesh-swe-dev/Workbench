@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Workbench Logo Design Comparison</title>
+  <style>
+    body {
+      font-family: Inter, system-ui, -apple-system, sans-serif;
+      background: #F8FAFC;
+      color: #111827;
+      padding: 48px;
+      margin: 0;
+    }
+    .container { max-width: 1040px; margin: 0 auto; }
+    h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 8px 0; }
+    p.lead { color: #4B5563; font-size: 14px; margin: 0 0 32px 0; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .card {
+      background: #FFFFFF;
+      border: 1px solid #E5E7EB;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #EFF6FF;
+      color: #1D4ED8;
+      border: 1px solid #BFDBFE;
+    }
+    .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .card-title { font-size: 15px; font-weight: 600; color: #111827; }
+    .stage {
+      background: #FFFFFF;
+      border: 1px solid #F1F5F9;
+      border-radius: 6px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .dark-stage {
+      background: #0F172A;
+      border: 1px solid #1E293B;
+      border-radius: 6px;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sizes-row {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      width: 100%;
+      padding-top: 16px;
+      border-top: 1px solid #F3F4F6;
+    }
+    .size-item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .size-lbl { font-size: 11px; color: #9CA3AF; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Workbench — Logo System Options</h1>
+    <p class="lead">Crafted for a high-performance B2B SaaS engineering & project management platform. Minimal, flat, vector, strictly 2 colors max.</p>
+
+    <div class="grid">
+      <!-- OPTION 1: Pure Minimalist Workbench (Front View: Top Slab + Two Legs + Sub-shelf) -->
+      <div class="card">
+        <div class="header-row">
+          <span class="card-title">Option A: Minimal Workbench (Front Elevation)</span>
+          <span class="badge">Literal Bench Reduction</span>
+        </div>
+        <div class="stage">
+          <!-- Horizontal Lockup 40px height -->
+          <svg width="240" height="48" viewBox="0 0 240 48" fill="none">
+            <!-- Symbol -->
+            <g transform="translate(4, 8)">
+              <!-- Top Slab with clean cantilever -->
+              <rect x="2" y="2" width="28" height="5" rx="1.5" fill="#2563EB" />
+              <!-- Left Leg -->
+              <rect x="5" y="9" width="4.5" height="17" rx="1.2" fill="#2563EB" />
+              <!-- Right Leg -->
+              <rect x="22.5" y="9" width="4.5" height="17" rx="1.2" fill="#2563EB" />
+              <!-- Structural Lower Crossbeam / Tool Shelf -->
+              <rect x="7" y="17" width="18" height="3.5" rx="1" fill="#1E293B" />
+            </g>
+            <!-- Wordmark: "Workbench" in Inter Semi-bold (600), -0.02em -->
+            <text x="48" y="30" font-family="Inter, system-ui, sans-serif" font-size="20" font-weight="600" letter-spacing="-0.02em" fill="#111827">Workbench</text>
+          </svg>
+
+          <!-- Scale tests -->
+          <div class="sizes-row">
+            <div class="size-item">
+              <span class="size-lbl">64px icon</span>
+              <svg width="48" height="48" viewBox="0 0 32 32" fill="none">
+                <rect x="2" y="3" width="28" height="5" rx="1.5" fill="#2563EB" />
+                <rect x="5" y="10" width="4.5" height="16" rx="1.2" fill="#2563EB" />
+                <rect x="22.5" y="10" width="4.5" height="16" rx="1.2" fill="#2563EB" />
+                <rect x="7" y="18" width="18" height="3.5" rx="1" fill="#1E293B" />
+              </svg>
+            </div>
+            <div class="size-item">
+              <span class="size-lbl">32px app</span>
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                <rect x="2" y="3" width="28" height="5" rx="1.5" fill="#2563EB" />
+                <rect x="5" y="10" width="4.5" height="16" rx="1.2" fill="#2563EB" />
+                <rect x="22.5" y="10" width="4.5" height="16" rx="1.2" fill="#2563EB" />
+                <rect x="7" y="18" width="18" height="3.5" rx="1" fill="#1E293B" />
+              </svg>
+            </div>
+            <div class="size-item">
+              <span class="size-lbl">16px favicon</span>
+              <svg width="16" height="16" viewBox="0 0 32 32" fill="none">
+                <rect x="2" y="3" width="28" height="5" rx="1.5" fill="#2563EB" />
+                <rect x="5" y="10" width="4.5" height="16" rx="1.2" fill="#2563EB" />
+                <rect x="22.5" y="10" width="4.5" height="16" rx="1.2" fill="#2563EB" />
+                <rect x="7" y="18" width="18" height="3.5" rx="1" fill="#1E293B" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OPTION 2: Monogram "W" built from two connected strokes forming bench trestles -->
+      <div class="card">
+        <div class="header-row">
+          <span class="card-title">Option B: Dual-Stroke Trestle Monogram 'W'</span>
+          <span class="badge" style="background:#ECFDF5; color:#065F46; border-color:#A7F3D0;">High Brand Recall</span>
+        </div>
+        <div class="stage">
+          <!-- Horizontal Lockup -->
+          <svg width="240" height="48" viewBox="0 0 240 48" fill="none">
+            <!-- Symbol -->
+            <g transform="translate(4, 9)">
+              <!-- Top Horizontal Workbench Slab -->
+              <rect x="2" y="1" width="28" height="4.5" rx="1.2" fill="#2563EB" />
+              <!-- Trestle W Legs (Two connected strokes that form an architectural W foundation) -->
+              <path d="M5 8H9.5L13.2 21C13.5 21.8 14.3 22.5 15.2 22.5H16.8C17.7 22.5 18.5 21.8 18.8 21L22.5 8H27L22.8 22C21.8 25.2 19.2 27 16 27C12.8 27 10.2 25.2 9.2 22L5 8Z" fill="#1E293B" />
+            </g>
+            <text x="48" y="30" font-family="Inter, system-ui, sans-serif" font-size="20" font-weight="600" letter-spacing="-0.02em" fill="#111827">Workbench</text>
+          </svg>
+
+          <!-- Scale tests -->
+          <div class="sizes-row">
+            <div class="size-item">
+              <span class="size-lbl">64px icon</span>
+              <svg width="48" height="48" viewBox="0 0 32 32" fill="none">
+                <rect x="2" y="2" width="28" height="4.5" rx="1.2" fill="#2563EB" />
+                <path d="M5 9H9.5L13.2 22C13.5 22.8 14.3 23.5 15.2 23.5H16.8C17.7 23.5 18.5 22.8 18.8 22L22.5 9H27L22.8 23C21.8 26.2 19.2 28 16 28C12.8 28 10.2 26.2 9.2 23L5 9Z" fill="#1E293B" />
+              </svg>
+            </div>
+            <div class="size-item">
+              <span class="size-lbl">32px app</span>
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                <rect x="2" y="2" width="28" height="4.5" rx="1.2" fill="#2563EB" />
+                <path d="M5 9H9.5L13.2 22C13.5 22.8 14.3 23.5 15.2 23.5H16.8C17.7 23.5 18.5 22.8 18.8 22L22.5 9H27L22.8 23C21.8 26.2 19.2 28 16 28C12.8 28 10.2 26.2 9.2 23L5 9Z" fill="#1E293B" />
+              </svg>
+            </div>
+            <div class="size-item">
+              <span class="size-lbl">16px favicon</span>
+              <svg width="16" height="16" viewBox="0 0 32 32" fill="none">
+                <rect x="2" y="2" width="28" height="4.5" rx="1.2" fill="#2563EB" />
+                <path d="M5 9H9.5L13.2 22C13.5 22.8 14.3 23.5 15.2 23.5H16.8C17.7 23.5 18.5 22.8 18.8 22L22.5 9H27L22.8 23C21.8 26.2 19.2 28 16 28C12.8 28 10.2 26.2 9.2 23L5 9Z" fill="#1E293B" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OPTION 3: Pure Geometric 'W' (Two interlocking structural blocks evoking benches & stacks) -->
+      <div class="card">
+        <div class="header-row">
+          <span class="card-title">Option C: Two Interlocking Beams 'W'</span>
+          <span class="badge">Linear / Vercel Vibe</span>
+        </div>
+        <div class="stage">
+          <svg width="240" height="48" viewBox="0 0 240 48" fill="none">
+            <g transform="translate(4, 9)">
+              <!-- Left V-stroke -->
+              <path d="M3 6C3 5.44772 3.44772 5 4 5H9.5C10.2 5 10.8 5.4 11.1 6L14.5 17L17.9 6C18.2 5.4 18.8 5 19.5 5H21C21.5523 5 22 5.44772 22 6V11L16.8 24.5C16.5 25.1 15.9 25.5 15.2 25.5H13.8C13.1 25.5 12.5 25.1 12.2 24.5L7 11V6H4C3.44772 6 3 5.44772 3 6Z" fill="#2563EB" />
+              <!-- Right interlocking bench wing -->
+              <path d="M17.5 13L21 24.5C21.3 25.1 21.9 25.5 22.6 25.5H27C27.5523 25.5 28 25.0523 28 24.5V6C28 5.44772 27.5523 5 27 5H23.5C22.8 5 22.2 5.4 21.9 6L19 16L17.5 13Z" fill="#1E293B" />
+            </g>
+            <text x="48" y="30" font-family="Inter, system-ui, sans-serif" font-size="20" font-weight="600" letter-spacing="-0.02em" fill="#111827">Workbench</text>
+          </svg>
+          <div class="sizes-row">
+            <div class="size-item">
+              <span class="size-lbl">16px favicon</span>
+              <svg width="16" height="16" viewBox="0 0 32 32" fill="none">
+                <path d="M3 6C3 5.44772 3.44772 5 4 5H9.5C10.2 5 10.8 5.4 11.1 6L14.5 17L17.9 6C18.2 5.4 18.8 5 19.5 5H21C21.5523 5 22 5.44772 22 6V11L16.8 24.5C16.5 25.1 15.9 25.5 15.2 25.5H13.8C13.1 25.5 12.5 25.1 12.2 24.5L7 11V6H4C3.44772 6 3 5.44772 3 6Z" fill="#2563EB" />
+                <path d="M17.5 13L21 24.5C21.3 25.1 21.9 25.5 22.6 25.5H27C27.5523 25.5 28 25.0523 28 24.5V6C28 5.44772 27.5523 5 27 5H23.5C22.8 5 22.2 5.4 21.9 6L19 16L17.5 13Z" fill="#1E293B" />
+              </svg>
+            </div>
+            <div class="size-item">
+              <span class="size-lbl">32px app</span>
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                <path d="M3 6C3 5.44772 3.44772 5 4 5H9.5C10.2 5 10.8 5.4 11.1 6L14.5 17L17.9 6C18.2 5.4 18.8 5 19.5 5H21C21.5523 5 22 5.44772 22 6V11L16.8 24.5C16.5 25.1 15.9 25.5 15.2 25.5H13.8C13.1 25.5 12.5 25.1 12.2 24.5L7 11V6H4C3.44772 6 3 5.44772 3 6Z" fill="#2563EB" />
+                <path d="M17.5 13L21 24.5C21.3 25.1 21.9 25.5 22.6 25.5H27C27.5523 25.5 28 25.0523 28 24.5V6C28 5.44772 27.5523 5 27 5H23.5C22.8 5 22.2 5.4 21.9 6L19 16L17.5 13Z" fill="#1E293B" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OPTION 4: The Clean Linear Monogram 'W' (Two Interconnected Work Slabs) -->
+      <div class="card">
+        <div class="header-row">
+          <span class="card-title">Option D: Pure Modern Monogram 'W'</span>
+          <span class="badge">Cleanest Geometric</span>
+        </div>
+        <div class="stage">
+          <svg width="240" height="48" viewBox="0 0 240 48" fill="none">
+            <g transform="translate(4, 9)">
+              <!-- Two connected strokes: Left 'V' bench and Right 'V' bench -->
+              <path d="M4 6H9L13 20L17 6H22L26 20L28 13H24V9H30V15L25 25H21L17.5 12.5L14 25H10L5 8H3V6H4Z" fill="#2563EB" />
+            </g>
+            <text x="48" y="30" font-family="Inter, system-ui, sans-serif" font-size="20" font-weight="600" letter-spacing="-0.02em" fill="#111827">Workbench</text>
+          </svg>
+          <div class="sizes-row">
+            <div class="size-item">
+              <span class="size-lbl">16px favicon</span>
+              <svg width="16" height="16" viewBox="0 0 32 32" fill="none">
+                <path d="M4 6H9L13 20L17 6H22L26 20L28 13H24V9H30V15L25 25H21L17.5 12.5L14 25H10L5 8H3V6H4Z" fill="#2563EB" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
