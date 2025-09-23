@@ -320,8 +320,119 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setActivities((prev) => [newActivity, ...prev.filter((a) => a.id !== newActivity.id)].slice(0, 50));
     };
 
+    socket.on('task:created', handleTaskCreated);
+    socket.on('task:updated', handleTaskUpdated);
+    socket.on('task:deleted', handleTaskDeleted);
+    socket.on('presence:sync', handlePresenceSync);
+    socket.on('activity:created', handleActivityCreated);
+
+    const userNotifHandler = (notif: Notification) => {
+      setNotifications((prev) => [notif, ...prev]);
+      addToast('info', `${notif.title}: ${notif.message}`);
+    };
+
+    socket.on(`notification:${user.id}`, userNotifHandler);
+
+    return () => {
+      if (currentProject) {
+        socket.emit('leave:project', { projectId: currentProject.id });
+      }
+      socket.off('task:created', handleTaskCreated);
+      socket.off('task:updated', handleTaskUpdated);
+      socket.off('task:deleted', handleTaskDeleted);
+      socket.off('presence:sync', handlePresenceSync);
+      socket.off('activity:created', handleActivityCreated);
+      socket.off(`notification:${user.id}`, userNotifHandler);
+    };
+  }, [user, organization, currentProject, selectedTaskId, addToast]);
+
+  const switchOrganization = async (orgId: string) => {
+    try {
+      const me = await api.switchOrganization(orgId);
+      await applyAuth(me);
+      addToast('success', `Switched to ${me.organization?.name ?? 'workspace'}`);
+    } catch (err: any) {
+      addToast('error', err?.message || 'Failed to switch workspace');
+    }
+  };
+
+  const markNotificationAsRead = async (id: string) => {
+    try {
+      await api.markNotificationRead(id);
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const markAllNotificationsAsRead = async () => {
+    try {
+      await api.markAllNotificationsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      addToast('success', 'All notifications marked as read');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
   return (
-    <AppContext.Provider value={{ state, dispatch, fetchWorkspaceData, switchOrganization, logout }}>
+    <AppContext.Provider
+      value={{
+        authStatus,
+        user,
+        organization,
+        membershipRole,
+        availableOrganizations,
+        projects,
+        currentProject,
+        tasks,
+        notifications,
+        activities,
+        unreadCount,
+        presenceUsers,
+        activeTab,
+        selectedTaskId,
+        isCreateTaskOpen,
+        isCreateProjectOpen,
+        isInviteMemberOpen,
+        isCreateReleaseOpen,
+        isMobileMenuOpen,
+        isActivityDrawerOpen,
+        searchQuery,
+        statusFilter,
+        priorityFilter,
+        assigneeFilter,
+        loading,
+        toasts,
+        setActiveTab,
+        setCurrentProject,
+        setSelectedTaskId,
+        setIsCreateTaskOpen,
+        setIsCreateProjectOpen,
+        setIsInviteMemberOpen,
+        setIsCreateReleaseOpen,
+        setIsMobileMenuOpen,
+        setIsActivityDrawerOpen,
+        setSearchQuery,
+        setStatusFilter,
+        setPriorityFilter,
+        setAssigneeFilter,
+        login,
+        register,
+        logout,
+        switchOrganization,
+        refreshTasks,
+        refreshProjects,
+        refreshNotifications,
+        refreshActivities,
+        markNotificationAsRead,
+        markAllNotificationsAsRead,
+        addToast,
+        removeToast,
+      }}
+    >
       {children}
     </AppContext.Provider>
   );
