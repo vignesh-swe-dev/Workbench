@@ -138,9 +138,127 @@ export function Sidebar() {
           <p className="px-1.5 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#9CA3AF]">
             Views
           </p>
-  return (
-    <aside className="w-60 border-r border-border bg-card flex flex-col h-full">
-      <div className="p-4 border-b border-border font-semibold">Navigation</div>
+        )}
+        {NAV_ITEMS.map((item) => {
+          const isActive = activeTab === item.tab;
+          const btn = (
+            <button
+              key={item.tab}
+              onClick={() => handleTab(item.tab)}
+              aria-current={isActive ? 'page' : undefined}
+              className={[
+                'relative w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-[6px] text-[13px] transition-colors duration-150',
+                isActive
+                  ? 'bg-[#E5E7EB] text-[#111827] font-medium'
+                  : 'text-[#4B5563] hover:bg-[#EAECEF] hover:text-[#111827]',
+                collapsed ? 'justify-center' : '',
+              ].join(' ')}
+            >
+              {isActive && (
+                <motion.div
+                  layoutId="sidebar-active-indicator"
+                  className="absolute left-0 top-1.5 bottom-1.5 w-[2.5px] bg-[#2563EB] rounded-r-full"
+                  transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                />
+              )}
+              <span className={isActive ? 'text-[#2563EB]' : 'text-[#6B7280]'}>
+                {item.icon}
+              </span>
+              {!collapsed && <span>{item.label}</span>}
+            </button>
+          );
+          return collapsed
+            ? <Tooltip key={item.tab} content={item.label} side="right">{btn}</Tooltip>
+            : btn;
+        })}
+      </nav>
+
+      {/* Bottom: user & collapse */}
+      <div className="px-2.5 pb-3 pt-2 border-t border-[#E5E7EB] bg-white space-y-1 shrink-0">
+        {user && (
+          collapsed ? (
+            <Tooltip content={user.name} side="right">
+              <div className="flex justify-center py-1">
+                <Avatar name={user.name} size="sm" />
+              </div>
+            </Tooltip>
+          ) : (
+            <div className="flex items-center gap-2 px-2 py-1.5 rounded-[6px] hover:bg-[#F4F5F7] transition-colors cursor-default">
+              <Avatar name={user.name} size="sm" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[12px] font-medium text-[#111827] truncate">{user.name}</p>
+                <p className="text-[11px] text-[#6B7280] truncate">{user.email}</p>
+              </div>
+              <Tooltip content="Log out" side="top">
+                <button
+                  onClick={logout}
+                  aria-label="Log out"
+                  className="p-1.5 rounded-[6px] text-[#9CA3AF] hover:bg-[#E5E7EB] hover:text-[#111827] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+                >
+                  <LogOut size={15} strokeWidth={1.5} />
+                </button>
+              </Tooltip>
+            </div>
+          )
+        )}
+
+        {collapsed && (
+          <Tooltip content="Log out" side="right">
+            <button
+              onClick={logout}
+              aria-label="Log out"
+              className="w-full flex justify-center p-2 rounded-[6px] text-[#9CA3AF] hover:bg-[#F4F5F7] hover:text-[#111827] transition-colors"
+            >
+              <LogOut size={14} strokeWidth={1.5} />
+            </button>
+          </Tooltip>
+        )}
+
+        {/* Expand button when collapsed */}
+        {collapsed && (
+          <Tooltip content="Expand sidebar" side="right">
+            <button
+              onClick={() => setCollapsed(false)}
+              aria-label="Expand sidebar"
+              className="w-full flex justify-center p-2 rounded-[6px] text-[#9CA3AF] hover:bg-[#F4F5F7] hover:text-[#111827] transition-colors"
+            >
+              <ChevronRight size={14} strokeWidth={1.5} />
+            </button>
+          </Tooltip>
+        )}
+      </div>
     </aside>
+  );
+
+  return (
+    <>
+      {/* Mobile backdrop */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="md:hidden fixed inset-0 z-30 bg-black/40"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Mobile: absolute drawer */}
+      <div
+        className={`md:hidden fixed inset-y-0 left-0 z-40 transition-transform duration-200 ${
+          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {sidebarContent}
+      </div>
+
+      {/* Desktop: static */}
+      <div className="hidden md:flex h-full">
+        {sidebarContent}
+      </div>
+    </>
   );
 }
