@@ -148,11 +148,147 @@ export function AuthPage() {
       {showPassword ? <EyeOff size={16} strokeWidth={1.5} /> : <Eye size={16} strokeWidth={1.5} />}
     </button>
   );
+
+  const passwordLongEnough = password.length >= 8;
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-      <div className="w-full max-w-md p-6 bg-card border border-border rounded-xl shadow-lg">
-        <h2 className="text-xl font-bold mb-4">Sign in to Workbench</h2>
-      </div>
+    <div className="min-h-full h-full w-full flex bg-[var(--bg)] overflow-y-auto">
+      {/* Brand panel (desktop) */}
+      <aside className="hidden lg:flex lg:w-[45%] xl:w-[42%] bg-[#1E293B] text-white flex-col justify-between p-12">
+        <Logo variant="dark" size={28} />
+
+        <div className="max-w-md">
+          <h2 className="text-[28px] leading-[1.2] font-semibold tracking-[-0.02em]">
+            Plan the work. Ship the release. Keep the team in sync.
+          </h2>
+          <ul className="mt-8 space-y-4">
+            {features.map(({ icon: Icon, text }) => (
+              <li key={text} className="flex items-center gap-3 text-[14px] text-slate-300">
+                <span className="w-8 h-8 rounded-[8px] bg-white/10 flex items-center justify-center shrink-0">
+                  <Icon size={16} strokeWidth={1.5} className="text-slate-100" />
+                </span>
+                {text}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <p className="text-[12px] text-slate-400">Workbench · Project management for teams</p>
+      </aside>
+
+      {/* Form panel */}
+      <main className="flex-1 flex flex-col items-center justify-center px-5 py-10 sm:px-8">
+        <div className="lg:hidden mb-8">
+          <Logo size={28} />
+        </div>
+
+        <div className="w-full max-w-[400px]">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={mode}
+              initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4 }}
+              transition={{ duration: reduceMotion ? 0 : 0.18, ease: 'easeOut' }}
+            >
+              <h1 className="text-[24px] font-semibold tracking-[-0.02em] text-[var(--text)]">
+                {isLogin ? 'Log in to Workbench' : 'Create your workspace'}
+              </h1>
+              <p className="mt-1.5 text-[14px] text-[var(--text-muted)]">
+                {isLogin
+                  ? 'Enter your email and password to continue.'
+                  : 'Set up your account. You will be the owner of the workspace.'}
+              </p>
+
+              <form onSubmit={handleSubmit} noValidate className="mt-7 space-y-4">
+                <div aria-live="polite">
+                  {formError && (
+                    <div
+                      role="alert"
+                      className="rounded-[var(--radius-sm)] border border-[var(--danger)]/30 bg-[var(--danger-subtle)] px-3 py-2.5 text-[13px] text-[var(--danger)]"
+                    >
+                      {formError}
+                    </div>
+                  )}
+                </div>
+
+                {!isLogin && (
+                  <Field
+                    ref={firstFieldRef}
+                    label="Full name"
+                    value={name}
+                    onChange={setName}
+                    error={errors.name}
+                    autoComplete="name"
+                    placeholder="Your name"
+                  />
+                )}
+
+                <Field
+                  ref={isLogin ? firstFieldRef : undefined}
+                  label={isLogin ? 'Email' : 'Work email'}
+                  type="email"
+                  inputMode="email"
+                  value={email}
+                  onChange={setEmail}
+                  error={errors.email}
+                  autoComplete="email"
+                  placeholder="you@company.com"
+                />
+
+                <Field
+                  label="Password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={setPassword}
+                  error={errors.password}
+                  autoComplete={isLogin ? 'current-password' : 'new-password'}
+                  placeholder={isLogin ? 'Your password' : 'At least 8 characters'}
+                  trailing={passwordToggle}
+                  hint={
+                    !isLogin ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <Check
+                          size={13}
+                          strokeWidth={2}
+                          className={passwordLongEnough ? 'text-[var(--success)]' : 'text-[var(--text-faint)]'}
+                        />
+                        At least 8 characters
+                      </span>
+                    ) : undefined
+                  }
+                />
+
+                {!isLogin && (
+                  <Field
+                    label="Workspace name"
+                    value={workspaceName}
+                    onChange={setWorkspaceName}
+                    error={errors.workspaceName}
+                    autoComplete="organization"
+                    placeholder="Your team or company"
+                  />
+                )}
+
+                <Button type="submit" size="lg" loading={submitting} className="w-full">
+                  {isLogin ? 'Log in' : 'Create account'}
+                </Button>
+              </form>
+
+              <p className="mt-6 text-[13px] text-[var(--text-muted)] text-center">
+                {isLogin ? 'New to Workbench?' : 'Already have an account?'}{' '}
+                <button
+                  type="button"
+                  onClick={() => switchMode(isLogin ? 'register' : 'login')}
+                  className="font-medium text-[var(--brand)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] rounded-sm"
+                >
+                  {isLogin ? 'Create an account' : 'Log in'}
+                </button>
+              </p>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </main>
     </div>
   );
 }
