@@ -198,9 +198,208 @@ export function TaskDetailModal() {
                   )}
                 </div>
 
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title={task?.title || "Task Details"}>
-      <div className="p-4 text-sm text-muted-foreground">{task?.description || "No description"}</div>
-    </Modal>
+                {/* Assignee */}
+                <div className="space-y-1">
+                  <p className="text-[11px] font-medium text-[var(--text-faint)] uppercase tracking-wider">Assignee</p>
+                  {task.assignee ? (
+                    <div className="flex items-center gap-1.5">
+                      <Avatar name={task.assignee.name} size="xs" />
+                      <span className="text-[13px] text-[var(--text)]">{task.assignee.name}</span>
+                    </div>
+                  ) : (
+                    <span className="text-[var(--text-faint)]">Unassigned</span>
+                  )}
+                </div>
+
+                {/* Due date */}
+                <div className="space-y-1">
+                  <p className="text-[11px] font-medium text-[var(--text-faint)] uppercase tracking-wider">Due date</p>
+                  <span className={`flex items-center gap-1 text-[13px] ${overdue ? 'text-[var(--danger)]' : 'text-[var(--text)]'}`}>
+                    <Clock size={12} strokeWidth={1.5} />
+                    {formatDate(task.dueDate)}
+                  </span>
+                </div>
+
+                {/* Reporter */}
+                <div className="space-y-1">
+                  <p className="text-[11px] font-medium text-[var(--text-faint)] uppercase tracking-wider">Reporter</p>
+                  {task.reporter ? (
+                    <div className="flex items-center gap-1.5">
+                      <Avatar name={task.reporter.name} size="xs" />
+                      <span className="text-[13px] text-[var(--text)]">{task.reporter.name}</span>
+                    </div>
+                  ) : <span className="text-[var(--text-faint)]">—</span>}
+                </div>
+
+                {/* Effort */}
+                {task.estimatedEffort != null && (
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-medium text-[var(--text-faint)] uppercase tracking-wider">Effort</p>
+                    <span className="text-[13px] text-[var(--text)]">{task.estimatedEffort} pts</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Labels */}
+              {task.labels.length > 0 && (
+                <div className="px-5 py-3 border-b border-[var(--border)] flex flex-wrap gap-1.5">
+                  {task.labels.map((l) => (
+                    <Badge key={l} variant="default" size="sm">
+                      <Tag size={10} strokeWidth={1.5} className="mr-0.5" />{l}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+              {/* GitHub PR */}
+              {task.githubPrUrl && (
+                <div className="px-5 py-3 border-b border-[var(--border)] flex items-center gap-2 text-[13px]">
+                  <GitPullRequest size={13} strokeWidth={1.5} className="text-[var(--text-muted)]" />
+                  <a
+                    href={task.githubPrUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[var(--brand)] hover:underline"
+                  >
+                    PR #{task.githubPrNumber}
+                  </a>
+                  <Badge
+                    variant={task.githubPrState === 'merged' ? 'success' : task.githubPrState === 'closed' ? 'danger' : 'info'}
+                    size="sm"
+                  >
+                    {task.githubPrState}
+                  </Badge>
+                </div>
+              )}
+
+              {/* Description */}
+              {task.description && (
+                <div className="px-5 py-4 border-b border-[var(--border)]">
+                  <p className="text-[11px] font-medium text-[var(--text-faint)] uppercase tracking-wider mb-2">Description</p>
+                  <p className="text-[13px] text-[var(--text)] whitespace-pre-wrap leading-relaxed">
+                    {task.description}
+                  </p>
+                </div>
+              )}
+
+              {/* Comments / Activity tabs */}
+              <div className="px-5 pt-4">
+                <div className="flex items-center gap-4 border-b border-[var(--border)] mb-3">
+                  {(['comments', 'activity'] as const).map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setActiveSection(s)}
+                      className={[
+                        'pb-2 text-[13px] font-medium capitalize border-b-2 -mb-px transition-colors',
+                        activeSection === s
+                          ? 'border-[var(--brand)] text-[var(--brand)]'
+                          : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text)]',
+                      ].join(' ')}
+                    >
+                      {s}
+                      {s === 'comments' && comments.length > 0 && (
+                        <span className="ml-1 text-[11px] bg-[var(--surface-2)] text-[var(--text-faint)] rounded-full px-1.5">{comments.length}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {loadingDetails ? (
+                  <div className="space-y-3 pb-4"><SkeletonText lines={4} /></div>
+                ) : activeSection === 'comments' ? (
+                  <div className="space-y-4 pb-4">
+                    {comments.map((c) => (
+                      <div key={c.id} className="flex gap-2.5">
+                        <Avatar name={c.author?.name ?? '?'} size="xs" className="shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline gap-2 mb-1">
+                            <span className="text-[12px] font-medium text-[var(--text)]">{c.author?.name ?? 'Unknown'}</span>
+                            <span className="text-[11px] text-[var(--text-faint)]">{timeAgo(c.createdAt)}</span>
+                          </div>
+                          <p className="text-[13px] text-[var(--text)] bg-[var(--surface-2)] rounded-[var(--radius-sm)] px-3 py-2 leading-relaxed">
+                            {c.content}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    {comments.length === 0 && (
+                      <p className="text-[13px] text-[var(--text-faint)]">No comments yet.</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2 pb-4">
+                    {activity.map((a) => (
+                      <div key={a.id} className="flex items-start gap-2 text-[12px]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--border-2)] mt-1.5 shrink-0" />
+                        <div>
+                          <span className="font-medium text-[var(--text)]">{a.actorName}</span>
+                          <span className="text-[var(--text-muted)]"> {a.details}</span>
+                          <span className="text-[var(--text-faint)] ml-1">· {timeAgo(a.createdAt)}</span>
+                        </div>
+                      </div>
+                    ))}
+                    {activity.length === 0 && (
+                      <p className="text-[13px] text-[var(--text-faint)]">No activity yet.</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Comment input + actions footer */}
+            <div className="px-5 py-4 border-t border-[var(--border)] space-y-3 shrink-0 bg-[var(--surface)]">
+              {canComment && (
+                <div className="flex gap-2">
+                  {user && <Avatar name={user.name} size="xs" className="shrink-0 mt-1" />}
+                  <div className="flex-1 flex gap-2">
+                    <textarea
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      placeholder="Add a comment…"
+                      rows={2}
+                      className="flex-1 text-[13px] bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius-sm)] px-3 py-2 text-[var(--text)] placeholder:text-[var(--text-faint)] resize-none focus:outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/20 transition-colors"
+                      onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleComment(); }}
+                    />
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={handleComment}
+                      loading={submitting}
+                      disabled={!commentText.trim()}
+                      className="self-end"
+                    >
+                      <Send size={13} strokeWidth={1.5} />
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {canDelete && (
+                <div className="flex justify-end">
+                  <Button variant="ghost" size="sm" onClick={() => setConfirmDelete(true)} className="text-[var(--danger)] hover:bg-[var(--danger-subtle)]">
+                    <Trash2 size={13} strokeWidth={1.5} />
+                    Delete task
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-[13px] text-[var(--text-faint)]">Task not found</p>
+          </div>
+        )}
+      </SlideOver>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={handleDelete}
+        title="Delete task"
+        description={`This will permanently delete ${task?.key}. This action cannot be undone.`}
+        confirmLabel="Delete"
+        loading={deleting}
+        variant="danger"
+      />
+    </>
   );
 }
