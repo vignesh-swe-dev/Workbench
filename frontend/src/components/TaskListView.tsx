@@ -138,12 +138,135 @@ export function TaskListView() {
           <option value="done">Done</option>
           <option value="cancelled">Cancelled</option>
         </select>
-  return (
-    <div className="p-6">
-      <table className="w-full text-left text-sm">
-        <thead><tr><th className="p-2 border-b">Task</th><th className="p-2 border-b">Status</th></tr></thead>
-        <tbody>{tasks.map(t => <tr key={t.id}><td className="p-2">{t.title}</td><td className="p-2">{t.status}</td></tr>)}</tbody>
-      </table>
+        <select
+          value={priorityFilter}
+          onChange={(e) => setPriorityFilter(e.target.value)}
+          className="h-8 px-2.5 text-[12px] font-medium bg-white border border-[#E5E7EB] rounded-[6px] text-[#374151] hover:border-[#D1D5DB] focus:outline-none focus:border-[#2563EB]"
+          aria-label="Filter by priority"
+        >
+          <option value="all">All priorities</option>
+          <option value="urgent">Urgent</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+
+        {canCreate && (
+          <Button variant="primary" size="sm" ripple={true} onClick={() => setIsCreateTaskOpen(true)}>
+            <Plus size={14} strokeWidth={1.5} className="shrink-0" />
+            <span>New task</span>
+          </Button>
+        )}
+      </div>
+
+      {/* Table */}
+      <div className="flex-1 overflow-auto">
+        {loading ? (
+          <div className="divide-y divide-[#E5E7EB]">
+            {Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)}
+          </div>
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            icon={<div className="w-10 h-10 rounded-full bg-[#F3F4F6] flex items-center justify-center"><Plus size={18} strokeWidth={1.5} className="text-[#9CA3AF]" /></div>}
+            title="No tasks found"
+            description={searchQuery || statusFilter !== 'all' || priorityFilter !== 'all' ? 'Try adjusting your filters.' : 'Create the first task for this project.'}
+            action={canCreate ? { label: 'New task', onClick: () => setIsCreateTaskOpen(true) } : undefined}
+            className="py-24"
+          />
+        ) : (
+          <table className="w-full border-collapse text-[13px]">
+            <thead className="sticky top-0 z-10 bg-[#F9FAFB] border-b border-[#E5E7EB]">
+              <tr>
+                <SortHeader label="Key"      sortKey="key"      current={sortKey} dir={sortDir} onSort={handleSort} />
+                <SortHeader label="Title"    sortKey="title"    current={sortKey} dir={sortDir} onSort={handleSort} />
+                <SortHeader label="Status"   sortKey="status"   current={sortKey} dir={sortDir} onSort={handleSort} />
+                <SortHeader label="Priority" sortKey="priority" current={sortKey} dir={sortDir} onSort={handleSort} />
+                <SortHeader label="Assignee" sortKey="assignee" current={sortKey} dir={sortDir} onSort={handleSort} />
+                <SortHeader label="Due"      sortKey="dueDate"  current={sortKey} dir={sortDir} onSort={handleSort} />
+                <th className="px-4 py-2.5 w-12" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#E5E7EB] bg-white">
+              {filtered.map((task, idx) => {
+                const t = task as Task & { assignee?: any };
+                const overdue = isOverdue(t.dueDate) && t.status !== 'done' && t.status !== 'cancelled';
+                const isHovered = hoveredId === t.id;
+
+                return (
+                  <motion.tr
+                    key={t.id}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.15, delay: Math.min(idx * 0.02, 0.25) }}
+                    className={`cursor-pointer transition-colors duration-100 ${isHovered ? 'bg-[#F9FAFB]' : 'bg-white'}`}
+                    onMouseEnter={() => setHoveredId(t.id)}
+                    onMouseLeave={() => setHoveredId(null)}
+                    onClick={() => setSelectedTaskId(t.id)}
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Enter') setSelectedTaskId(t.id); }}
+                    role="row"
+                    aria-label={`${t.key}: ${t.title}`}
+                  >
+                    {/* Key */}
+                    <td className="px-4 py-2.5 whitespace-nowrap">
+                      <span className="task-key font-mono text-[11px] text-[#6B7280]">{t.key}</span>
+                    </td>
+                    {/* Title */}
+                    <td className="px-4 py-2.5 max-w-sm">
+                      <span className="text-[#111827] font-medium truncate block">{t.title}</span>
+                      {t.labels.length > 0 && (
+                        <div className="flex gap-1 mt-1 flex-wrap">
+                          {t.labels.slice(0, 3).map((l) => (
+                            <Badge key={l} variant="default" size="sm">{l}</Badge>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                    {/* Status */}
+                    <td className="px-4 py-2.5 whitespace-nowrap">
+                      <Badge variant={getStatusVariant(t.status)} size="sm">{getStatusLabel(t.status)}</Badge>
+                    </td>
+                    {/* Priority */}
+                    <td className="px-4 py-2.5 whitespace-nowrap">
+                      <Badge variant={getPriorityVariant(t.priority)} size="sm" dot>
+                        <span className="capitalize">{t.priority}</span>
+                      </Badge>
+                    </td>
+                    {/* Assignee */}
+                    <td className="px-4 py-2.5 whitespace-nowrap">
+                      {t.assignee ? (
+                        <div className="flex items-center gap-2">
+                          <Avatar name={t.assignee.name} size="xs" />
+                          <span className="text-[#4B5563] text-[12px]">{t.assignee.name}</span>
+                        </div>
+                      ) : (
+                        <span className="text-[#9CA3AF]">—</span>
+                      )}
+                    </td>
+                    {/* Due */}
+                    <td className="px-4 py-2.5 whitespace-nowrap">
+                      {t.dueDate ? (
+                        <span className={`flex items-center gap-1 text-[12px] ${overdue ? 'text-[#DC2626] font-medium' : 'text-[#6B7280]'}`}>
+                          {overdue && <AlertCircle size={11} strokeWidth={2} />}
+                          {formatDate(t.dueDate)}
+                        </span>
+                      ) : (
+                        <span className="text-[#9CA3AF]">—</span>
+                      )}
+                    </td>
+                    {/* Hover action */}
+                    <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                      <span className={`text-[12px] text-[#2563EB] font-medium transition-opacity ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+                        View →
+                      </span>
+                    </td>
+                  </motion.tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }
