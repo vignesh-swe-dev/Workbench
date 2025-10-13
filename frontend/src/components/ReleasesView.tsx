@@ -128,10 +128,151 @@ export function ReleasesView() {
             </div>
 
             <form onSubmit={handleCreateRelease} className="space-y-4 pt-3">
-  return (
-    <div className="p-6 space-y-4">
-      <h2 className="text-lg font-bold">Releases & Changelog</h2>
-      <div className="space-y-3">{releases.map(r => <div key={r.id} className="p-4 border rounded-lg">{r.title} ({r.version})</div>)}</div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Input
+                  label="Version (e.g. v2.5.0) *"
+                  required
+                  placeholder="v2.5.0"
+                  value={newVersion}
+                  onChange={(e) => setNewVersion(e.target.value)}
+                />
+                <Input
+                  label="Title *"
+                  required
+                  placeholder="e.g. Real-Time Telemetry & Scaling"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                />
+                <Input
+                  label="Target Date *"
+                  type="date"
+                  required
+                  value={newTargetDate}
+                  onChange={(e) => setNewTargetDate(e.target.value)}
+                />
+              </div>
+
+              <Textarea
+                label="Description"
+                rows={2}
+                placeholder="Summary of architectural goals in this release candidate..."
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+              />
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-[#E5E7EB]">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsCreateOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                >
+                  Save Milestone
+                </Button>
+              </div>
+            </form>
+          </Card>
+        )}
+
+        {/* Releases List */}
+        <div className="space-y-4">
+          {releases.map((rel) => {
+            const isReleased = rel.status === 'released';
+            const linkedTasks = tasks.filter((t) => t.releaseId === rel.id || rel.linkedTaskIds.includes(t.id));
+            const completedCount = linkedTasks.filter((t) => t.status === 'done').length;
+            const progress = linkedTasks.length > 0 ? Math.round((completedCount / linkedTasks.length) * 100) : 0;
+
+            return (
+              <Card key={rel.id} className="space-y-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2.5">
+                      <span className="font-mono text-[12px] font-semibold text-[#111827] bg-[#F3F4F6] border border-[#E5E7EB] px-2 py-0.5 rounded-[4px]">
+                        {rel.version}
+                      </span>
+                      <h2 className="text-[15px] font-semibold text-[#111827]">{rel.title}</h2>
+                      <Badge variant={isReleased ? 'success' : rel.status === 'in_progress' ? 'warning' : 'default'}>
+                        <span className="capitalize">{rel.status.replace('_', ' ')}</span>
+                      </Badge>
+                    </div>
+                    {rel.description && (
+                      <p className="text-[13px] text-[#4B5563] leading-relaxed pt-1">{rel.description}</p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {!isReleased && canManageReleases && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleMarkReleased(rel.id)}
+                      >
+                        <CheckCircle2 size={14} strokeWidth={1.5} className="text-[#059669]" />
+                        <span>Publish Release</span>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Progress bar */}
+                <div className="space-y-2 bg-[#F9FAFB] p-3.5 rounded-[6px] border border-[#E5E7EB]">
+                  <div className="flex items-center justify-between text-[12px] text-[#6B7280]">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar size={13} strokeWidth={1.5} className="text-[#9CA3AF]" />
+                      <span>
+                        Target Date: <strong className="text-[#111827]">{new Date(rel.targetDate).toLocaleDateString()}</strong>
+                      </span>
+                      {rel.releasedAt && (
+                        <span className="text-[#059669] ml-2">
+                          (Shipped on {new Date(rel.releasedAt).toLocaleDateString()})
+                        </span>
+                      )}
+                    </div>
+                    <span>
+                      {completedCount} of {linkedTasks.length} tasks completed ({progress}%)
+                    </span>
+                  </div>
+
+                  <div className="w-full h-2 rounded-full bg-[#E5E7EB] overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-300 ${
+                        isReleased ? 'bg-[#059669]' : 'bg-[#2563EB]'
+                      }`}
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Release Notes */}
+                {rel.releaseNotes && (
+                  <div className="p-3 bg-[#F6F8FA] rounded-[6px] border border-[#E1E4E8]">
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#6B7280] mb-1">
+                      <FileText size={13} strokeWidth={1.5} className="text-[#2563EB]" />
+                      <span>Release Notes</span>
+                    </div>
+                    <pre className="text-[12px] text-[#374151] font-sans whitespace-pre-wrap leading-relaxed">
+                      {rel.releaseNotes}
+                    </pre>
+                  </div>
+                )}
+              </Card>
+            );
+          })}
+
+          {releases.length === 0 && (
+            <div className="p-12 text-center text-[#9CA3AF] text-[13px] border border-dashed border-[#E5E7EB] rounded-[8px] bg-white">
+              No releases planned yet for this project.
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
