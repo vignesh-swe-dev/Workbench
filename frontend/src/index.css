@@ -267,3 +267,76 @@ h1, h2, h3, h4 {
   font-variant-numeric: tabular-nums;
 }
 
+/* Tabular figures for numbers, metrics, dates, and currency */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #D1D5DB;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9CA3AF;
+}
+
+/* Enhanced scrollbar for Kanban board horizontal scroll */
+.kanban-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E1 #F1F5F9;
+}
+.kanban-scroll-container::-webkit-scrollbar {
+  height: 8px;
+}
+.kanban-scroll-container::-webkit-scrollbar-track {
+  background: #F1F5F9;
+  border-radius: 9999px;
+  margin: 0 16px;
+}
+.kanban-scroll-container::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+.kanban-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* ============================================================
+   MICRO-INTERACTIONS & SKELETON
+   ============================================================ */
+.sidebar-expanded { width: var(--sidebar-width); }
+.sidebar-collapsed { width: var(--sidebar-collapsed); }
+
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #F1F5F9 25%,
+    #E2E8F0 37%,
+    #F1F5F9 63%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.5s ease infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes toast-progress {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+.toast-progress {
+  animation: toast-progress linear forwards;
+}
