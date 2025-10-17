@@ -128,10 +128,154 @@ export function DocsView() {
                       <td className="py-2.5 px-3.5 font-mono text-[11px] text-[#4B5563]">&#123; slug: 1 &#125; [unique], &#123; ownerId: 1 &#125;</td>
                       <td className="py-2.5 px-3.5 text-[#4B5563]">Workspace routing & tenant identification</td>
                     </tr>
-  return (
-    <div className="p-6 space-y-4">
-      <h2 className="text-lg font-bold">Workbench API Documentation</h2>
-      <p className="text-sm text-muted-foreground">Interactive REST and WebSocket API specification.</p>
+                    <tr className="hover:bg-[#F9FAFB] transition-colors">
+                      <td className="py-2.5 px-3.5 font-mono text-[12px] text-[#2563EB] font-medium">memberships</td>
+                      <td className="py-2.5 px-3.5 font-mono text-[11px] text-[#4B5563]">&#123; organizationId: 1, userId: 1 &#125; [unique]</td>
+                      <td className="py-2.5 px-3.5 text-[#4B5563]">Fast RBAC checks & tenant membership</td>
+                    </tr>
+                    <tr className="hover:bg-[#F9FAFB] transition-colors">
+                      <td className="py-2.5 px-3.5 font-mono text-[12px] text-[#2563EB] font-medium">projects</td>
+                      <td className="py-2.5 px-3.5 font-mono text-[11px] text-[#4B5563]">&#123; organizationId: 1, key: 1 &#125; [unique]</td>
+                      <td className="py-2.5 px-3.5 text-[#4B5563]">Ensures project keys are distinct per workspace</td>
+                    </tr>
+                    <tr className="hover:bg-[#F9FAFB] transition-colors">
+                      <td className="py-2.5 px-3.5 font-mono text-[12px] text-[#2563EB] font-medium">tasks</td>
+                      <td className="py-2.5 px-3.5 font-mono text-[11px] text-[#4B5563]">&#123; organizationId: 1, projectId: 1, status: 1, position: 1 &#125;</td>
+                      <td className="py-2.5 px-3.5 text-[#4B5563]">Optimizes Kanban column queries & drag reorders</td>
+                    </tr>
+                    <tr className="hover:bg-[#F9FAFB] transition-colors">
+                      <td className="py-2.5 px-3.5 font-mono text-[12px] text-[#2563EB] font-medium">notifications</td>
+                      <td className="py-2.5 px-3.5 font-mono text-[11px] text-[#4B5563]">&#123; organizationId: 1, userId: 1, read: 1, createdAt: -1 &#125;</td>
+                      <td className="py-2.5 px-3.5 text-[#4B5563]">Instant unread count & user inbox queries</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </Card>
+        </TabPanel>
+
+        <TabPanel tabId="security" activeId={section}>
+          <Card>
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-[16px] font-semibold text-[#111827]">
+                  Multi-Tenant Security & Concurrency Control
+                </h2>
+                <p className="text-[13px] text-[#4B5563] mt-1 leading-relaxed">
+                  Strict boundaries enforce enterprise authorization standards at both HTTP transport and storage layers.
+                </p>
+              </div>
+
+              <div className="space-y-3 pt-2">
+                <div className="flex items-start gap-3 p-3 rounded-[6px] border border-[#E5E7EB] bg-[#F9FAFB]">
+                  <CheckCircle2 className="w-4 h-4 text-[#059669] shrink-0 mt-0.5" strokeWidth={1.5} />
+                  <div>
+                    <div className="text-[13px] font-semibold text-[#111827]">Server-Side Authorization Boundary</div>
+                    <p className="text-[13px] text-[#4B5563] mt-0.5 leading-relaxed">
+                      The frontend never dictates user privileges. All mutations pass through <code className="font-mono text-[12px] px-1 py-0.5 bg-white border border-[#E1E4E8] rounded text-[#1F2937]">requireRolePermission</code> gate middleware with zero bypass paths.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 rounded-[6px] border border-[#E5E7EB] bg-[#F9FAFB]">
+                  <CheckCircle2 className="w-4 h-4 text-[#059669] shrink-0 mt-0.5" strokeWidth={1.5} />
+                  <div>
+                    <div className="text-[13px] font-semibold text-[#111827]">Optimistic Concurrency Control (OCC)</div>
+                    <p className="text-[13px] text-[#4B5563] mt-0.5 leading-relaxed">
+                      Tasks maintain an integer <code className="font-mono text-[12px] px-1 py-0.5 bg-white border border-[#E1E4E8] rounded text-[#1F2937]">version</code> counter. When concurrent edits collide, the server responds with HTTP 409 Conflict, alerting the client and preventing silent data overwrites.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 rounded-[6px] border border-[#E5E7EB] bg-[#F9FAFB]">
+                  <CheckCircle2 className="w-4 h-4 text-[#059669] shrink-0 mt-0.5" strokeWidth={1.5} />
+                  <div>
+                    <div className="text-[13px] font-semibold text-[#111827]">Directed Acyclic Graph (DAG) Cycle Prevention</div>
+                    <p className="text-[13px] text-[#4B5563] mt-0.5 leading-relaxed">
+                      Task dependencies execute depth-first search (DFS) cycle checks prior to insertion to prevent circular prerequisites.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 rounded-[6px] border border-[#E5E7EB] bg-[#F9FAFB]">
+                  <CheckCircle2 className="w-4 h-4 text-[#059669] shrink-0 mt-0.5" strokeWidth={1.5} />
+                  <div>
+                    <div className="text-[13px] font-semibold text-[#111827]">GitHub Webhook HMAC SHA-256 Verification</div>
+                    <p className="text-[13px] text-[#4B5563] mt-0.5 leading-relaxed">
+                      Webhooks compare cryptographic signature digests against the raw request body before processing events.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </TabPanel>
+
+        <TabPanel tabId="api" activeId={section}>
+          <Card>
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-[16px] font-semibold text-[#111827]">
+                  RESTful API Endpoints (/api/v1)
+                </h2>
+                <p className="text-[13px] text-[#4B5563] mt-1 leading-relaxed">
+                  Predictable, resource-oriented endpoints with JSON response payloads and standard HTTP status codes.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                {[
+                  { method: 'GET', path: '/api/v1/auth/me', desc: 'Current user, role & workspaces', color: 'text-[#2563EB] bg-[#EFF6FF]' },
+                  { method: 'GET', path: '/api/v1/organizations/:orgId/projects', desc: 'List projects for active workspace', color: 'text-[#2563EB] bg-[#EFF6FF]' },
+                  { method: 'POST', path: '/api/v1/projects/:projectId/tasks', desc: 'Create task with dependency validation', color: 'text-[#059669] bg-[#ECFDF5]' },
+                  { method: 'PATCH', path: '/api/v1/tasks/:taskId', desc: 'Update status with optimistic concurrency (OCC)', color: 'text-[#D97706] bg-[#FFFBEB]' },
+                  { method: 'POST', path: '/api/v1/integrations/github/webhook', desc: 'HMAC SHA-256 verified event ingest', color: 'text-[#059669] bg-[#ECFDF5]' },
+                ].map((item, idx) => (
+                  <div key={idx} className="p-3 bg-white rounded-[6px] border border-[#E5E7EB] flex items-center justify-between text-[13px] font-mono hover:border-[#D1D5DB] transition-colors">
+                    <div className="flex items-center gap-2.5">
+                      <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded ${item.color}`}>
+                        {item.method}
+                      </span>
+                      <span className="text-[#111827]">{item.path}</span>
+                    </div>
+                    <span className="text-[12px] text-[#6B7280] font-sans hidden sm:inline">{item.desc}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
+        </TabPanel>
+
+        <TabPanel tabId="deployment" activeId={section}>
+          <Card>
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-[16px] font-semibold text-[#111827]">
+                  Production Deployment & Containerization
+                </h2>
+                <p className="text-[13px] text-[#4B5563] mt-1 leading-relaxed">
+                  ForgeFlow is production-ready and can be deployed with Docker Compose containing persistent store, cache, and WebSocket containers.
+                </p>
+              </div>
+
+              <pre className="p-4 bg-[#F6F8FA] border border-[#E1E4E8] rounded-[6px] text-[12px] font-mono text-[#1F2937] overflow-x-auto leading-relaxed">
+{`# Run locally with Docker Compose:
+docker-compose up -d
+
+# Execute automated test suite:
+npm run test
+
+# Build production frontend:
+npm run build
+
+# Start production server:
+npm start`}
+              </pre>
+            </div>
+          </Card>
+        </TabPanel>
+      </div>
     </div>
   );
 }
