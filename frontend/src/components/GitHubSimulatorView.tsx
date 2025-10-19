@@ -108,10 +108,96 @@ export function GitHubSimulatorView() {
                 {tasks.map((t) => (
                   <option key={t.id} value={t.key}>
                     [{t.key}] {t.title.slice(0, 36)}... ({t.status})
-  return (
-    <div className="p-6 space-y-4">
-      <h2 className="text-lg font-bold">GitHub Integration Simulator</h2>
-      <div className="border rounded-lg p-4 text-sm">Branches and pull requests mock environment.</div>
+                  </option>
+                ))}
+              </Select>
+
+              <div>
+                <label className="text-[13px] font-medium text-[#111827] block mb-1">
+                  Webhook Event Action
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEventType('pr_opened')}
+                    className={`h-9 px-3 rounded-[6px] text-[13px] font-medium flex items-center justify-center gap-1.5 transition-all ${
+                      eventType === 'pr_opened'
+                        ? 'bg-[#2563EB] text-white shadow-xs'
+                        : 'bg-white text-[#4B5563] border border-[#E5E7EB] hover:bg-[#F9FAFB]'
+                    }`}
+                  >
+                    <GitPullRequest size={14} strokeWidth={1.5} />
+                    <span>PR Opened</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEventType('pr_merged')}
+                    className={`h-9 px-3 rounded-[6px] text-[13px] font-medium flex items-center justify-center gap-1.5 transition-all ${
+                      eventType === 'pr_merged'
+                        ? 'bg-[#059669] text-white shadow-xs'
+                        : 'bg-white text-[#4B5563] border border-[#E5E7EB] hover:bg-[#F9FAFB]'
+                    }`}
+                  >
+                    <CheckCircle2 size={14} strokeWidth={1.5} />
+                    <span>PR Merged</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="sm:col-span-1">
+                <Input
+                  label="PR Number"
+                  type="number"
+                  value={prNumber}
+                  onChange={(e) => setPrNumber(Number(e.target.value))}
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <Input
+                  label="Pull Request Title"
+                  type="text"
+                  value={prTitle}
+                  onChange={(e) => setPrTitle(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-[#E5E7EB]">
+              <Button
+                type="submit"
+                variant="primary"
+                size="sm"
+                loading={loading}
+              >
+                <Send size={14} strokeWidth={1.5} className="shrink-0" />
+                <span>Dispatch Simulated Webhook</span>
+              </Button>
+            </div>
+          </form>
+        </Card>
+
+        {/* Live Output Log */}
+        {lastResponse && (
+          <Card className="space-y-2">
+            <div className="flex items-center justify-between text-[12px] pb-2 border-b border-[#E5E7EB]">
+              <div className="flex items-center gap-2 font-mono text-[#111827]">
+                <Terminal size={14} strokeWidth={1.5} className="text-[#059669]" />
+                <span className="font-semibold">Webhook Delivery: {lastResponse.status}</span>
+              </div>
+              <span className="text-[11px] text-[#9CA3AF]">{lastResponse.timestamp}</span>
+            </div>
+
+            <div className="text-[13px] text-[#059669] font-medium">{lastResponse.message}</div>
+
+            <pre className="p-3 bg-[#F6F8FA] rounded-[6px] border border-[#E1E4E8] text-[12px] font-mono text-[#1F2937] overflow-x-auto leading-relaxed">
+              {JSON.stringify(lastResponse.payloadSent, null, 2)}
+            </pre>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }
