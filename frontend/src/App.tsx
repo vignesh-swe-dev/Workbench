@@ -1,3 +1,4 @@
+// Workbench main single-page application router
 import React, { Suspense, lazy } from 'react';
 import { AppProvider, useApp } from './context/AppContext.tsx';
 import { TopBar } from './components/TopBar.tsx';
@@ -63,13 +64,59 @@ function MainContent() {
       <motion.div
         key={activeTab}
         initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -4 }}
+        transition={{ duration: 0.2, ease: 'easeOut' }}
+        className="flex-1 flex flex-col min-w-0 overflow-hidden"
+      >
+        <Suspense fallback={<PageSkeleton />}>
+          {activeTab === 'board'     && <KanbanBoard />}
+          {activeTab === 'list'      && <TaskListView />}
+          {activeTab === 'releases'  && <ReleasesView />}
+          {activeTab === 'analytics' && <AnalyticsView />}
+          {activeTab === 'members'   && <TeamView />}
+          {activeTab === 'github'    && <GitHubSimulator />}
+          {activeTab === 'docs'      && <DocsView />}
+        </Suspense>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+function MainLayout() {
+  const { loading, authStatus } = useApp();
+
+  if (loading || authStatus === 'loading') return <AppLoading />;
+  if (authStatus === 'unauthenticated') return <AuthPage />;
+
   return (
-    <div className="flex h-screen bg-background text-foreground">
-      <Sidebar activeView={activeView} setActiveView={setActiveView} />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <TopBar />
-        <main className="flex-1 overflow-auto">{activeView === "board" ? <KanbanBoard /> : <TaskListView />}</main>
+    <div className="h-full flex flex-col bg-[var(--bg)] overflow-hidden">
+      <TopBar />
+      <div className="flex-1 flex overflow-hidden">
+        <Sidebar />
+        <main className="flex-1 flex overflow-hidden relative">
+          <MainContent />
+        </main>
       </div>
+
+      {/* Overlays — lazy loaded */}
+      <Suspense fallback={null}>
+        <TaskDetailModal />
+        <CreateTaskModal />
+        <CreateProjectModal />
+        <InviteMemberModal />
+        <ActivityDrawer />
+      </Suspense>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ToastProvider>
+      <AppProvider>
+        <MainLayout />
+      </AppProvider>
+    </ToastProvider>
   );
 }
