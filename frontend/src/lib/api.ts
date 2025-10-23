@@ -1,4 +1,3 @@
-// Frontend API client layer
 /**
  * ForgeFlow Frontend API Client
  */
