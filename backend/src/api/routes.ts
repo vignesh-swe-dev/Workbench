@@ -1,4 +1,3 @@
-// Express routing engine
 import { Router, Request, Response, NextFunction } from 'express';
 import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
