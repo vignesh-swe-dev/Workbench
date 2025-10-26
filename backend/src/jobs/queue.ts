@@ -1,4 +1,3 @@
-// Async background job queue processor
 /**
  * Background Job Queue & Worker Architecture
  * BullMQ abstraction pattern with exponential backoff, idempotency, and failure handling.
