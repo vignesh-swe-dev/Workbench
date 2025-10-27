@@ -1,4 +1,3 @@
-// Database dual storage engine
 import path from 'node:path';
 import type {
   User,
