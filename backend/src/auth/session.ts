@@ -1,4 +1,3 @@
-// Session token and authentication utilities
 import type { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
