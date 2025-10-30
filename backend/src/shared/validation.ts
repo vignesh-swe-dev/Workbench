@@ -1,4 +1,3 @@
-// Domain validation schemas and rules
 import { z } from 'zod';
 
 export const registerSchema = z.object({
