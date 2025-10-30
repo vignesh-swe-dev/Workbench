@@ -1,4 +1,3 @@
-// Workbench main single-page application router
 import React, { Suspense, lazy } from 'react';
 import { AppProvider, useApp } from './context/AppContext.tsx';
 import { TopBar } from './components/TopBar.tsx';
